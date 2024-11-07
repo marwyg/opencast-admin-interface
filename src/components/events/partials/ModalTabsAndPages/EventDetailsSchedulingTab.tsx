@@ -632,7 +632,7 @@ const EventDetailsSchedulingTab = ({
 																						tabIndex={8 + key}
 																						value={inputMethod.id}
 																					/>
-																					{t(inputMethod.value)}
+																					{t(inputMethod.value, inputMethod.id)}
 																				</label>
 																			)
 																		)
