@@ -19,7 +19,7 @@ const SchedulingInputs = ({
 				(input, key) => (
 					<label key={key}>
 						<Field
-							name="inputs"
+							name="deviceInputs"
 							type="checkbox"
 							value={input.id}
 						/>
