@@ -2,8 +2,8 @@ import { getFilters, getTextFilter } from "../selectors/tableFilterSelectors";
 import {
 	getPageLimit,
 	getPageOffset,
-	getTableDirection,
-	getTableSorting,
+	getTableDirectionForResource,
+	getTableSortingForResource,
 } from "../selectors/tableSelectors";
 import { TransformedAcl } from "../slices/aclDetailsSlice";
 import { Acl } from "../slices/aclSlice";
@@ -46,7 +46,7 @@ export const getURLParams = (
 		filters.push(["textFilter", textFilter]);
 	}
 	// transform filters for use as URL param
-	for (let key in filterMap) {
+	for (const [key, _] of filterMap.entries()) {
 		if (!!filterMap[key].value) {
 			filters.push([filterMap[key].name, filterMap[key].value.toString()]);
 		}
@@ -71,10 +71,12 @@ export const getURLParams = (
 		};
 	}
 
-	if (!!getTableSorting(state)) {
+	if (!!getTableSortingForResource(state, resource)) {
 		params = {
 			...params,
-			sort: getTableSorting(state) + ":" + getTableDirection(state),
+			sort: getTableSortingForResource(state, resource)
+				+ ":"
+				+ getTableDirectionForResource(state, resource),
 		};
 	}
 

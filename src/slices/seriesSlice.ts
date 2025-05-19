@@ -176,7 +176,7 @@ export const fetchSeriesThemes = createAppAsyncThunk('series/fetchSeriesThemes',
 export const postNewSeries = createAppAsyncThunk('series/postNewSeries', async (params: {
 	values: {
 		[key: string]: any;
-		acls: TransformedAcl[],
+		policies: TransformedAcl[],
 		// contributor: string[],
 		// creator: string[],
 		// description: string,
@@ -210,14 +210,14 @@ export const postNewSeries = createAppAsyncThunk('series/postNewSeries', async (
 		metadata.push(entry);
 	}
 
-	const access = prepareAccessPolicyRulesForPost(values.acls);
+	const access = prepareAccessPolicyRulesForPost(values.policies);
 
 	// Tobira
 	let tobira: any = {};
 	if (values.selectedPage && values.breadcrumbs) {
 		let existingPages: any[] = [];
 		let newPages: any[] = [];
-		values.breadcrumbs.concat(values.selectedPage).forEach( function (page: TobiraPage) {
+		values.breadcrumbs.concat(values.selectedPage).forEach(function (page: TobiraPage) {
 			if (page.new) {
 				newPages.push({
 					name: page.title,
@@ -235,7 +235,7 @@ export const postNewSeries = createAppAsyncThunk('series/postNewSeries', async (
 
 	let jsonData: {
 		metadata: typeof metadata,
-		options: {},
+		options: unknown,
 		access: typeof access,
 		theme?: number,
 		tobira?: any
@@ -351,7 +351,7 @@ export const fetchSeriesDetailsTobiraNew = createAppAsyncThunk('seriesDetails/fe
 		.catch(response => handleTobiraError(response, dispatch));
 
 	if (!res) {
-		throw Error;
+		throw new Error();
 	}
 
 	const data = res.data;

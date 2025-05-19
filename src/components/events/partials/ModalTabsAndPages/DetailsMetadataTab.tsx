@@ -17,6 +17,11 @@ import { AsyncThunk } from "@reduxjs/toolkit";
 import RenderDate from "../../../shared/RenderDate";
 import WizardNavigationButtons from "../../../shared/wizard/WizardNavigationButtons";
 import { ParseKeys } from "i18next";
+import ModalContentTable from "../../../shared/modals/ModalContentTable";
+
+type InitialValues = {
+	[key: string]: string | string[];
+}
 
 /**
  * This component renders metadata details of a certain event or series
@@ -26,6 +31,7 @@ const DetailsMetadataTab = ({
 	metadata,
 	updateResource,
 	editAccessRole,
+	formikRef,
 	header,
 }: {
 	resourceId: string,
@@ -36,6 +42,7 @@ const DetailsMetadataTab = ({
 		catalog: MetadataCatalog;
 	}, any> //(id: string, values: { [key: string]: any }, catalog: MetadataCatalog) => void,
 	editAccessRole: string,
+	formikRef?: React.RefObject<FormikProps<InitialValues> | null>
 	header?: ParseKeys
 }) => {
 	const { t } = useTranslation();
@@ -61,7 +68,7 @@ const DetailsMetadataTab = ({
 		return initialValues;
 	};
 
-	const checkValidity = (formik: FormikProps<{}>) => {
+	const checkValidity = (formik: FormikProps<any>) => {
 		if (formik.dirty && formik.isValid && hasAccess(editAccessRole, user)) {
 			// check if user provided values differ from initial ones
 			return !_.isEqual(formik.values, formik.initialValues);
@@ -71,103 +78,102 @@ const DetailsMetadataTab = ({
 	};
 
 	return (
-		<div className="modal-content">
-			<div className="modal-body">
-				{/* Notifications */}
-				<Notifications context="not_corner" />
-
-				<div className="full-col">
-					{
-						//iterate through metadata catalogs
-						!!metadata &&
-							metadata.length > 0 &&
-							metadata.map((catalog, key) => (
-								// initialize form
-								<Formik
-									enableReinitialize
-									initialValues={getInitialValues(catalog)}
-									onSubmit={(values) => handleSubmit(values, catalog)}
-								>
-									{(formik) => (
-										/* Render table for each metadata catalog */
-										<div className="obj tbl-details" key={key}>
-											<header>
-												<span>{t(header ? header : catalog.title as ParseKeys)}</span>
-											</header>
-											<div className="obj-container">
-												<table className="main-tbl">
-													<tbody>
-														{/* Render table row for each metadata field depending on type */}
-														{!!catalog.fields &&
-															catalog.fields.map((field, index) => (
-																<tr key={index}>
-																	<td>
-																		<span>{t(field.label as ParseKeys)}</span>
-																		{field.required && (
-																			<i className="required">*</i>
-																		)}
-																	</td>
-																	{field.readOnly ||
-																	!hasAccess(editAccessRole, user) ? (
-																		// non-editable field if readOnly is set or user doesn't have edit access rights
-																		!!field.collection &&
-																		field.collection.length !== 0 ? (
-																			<td>{getMetadataCollectionFieldName(field, field, t)}</td>
-																		) : (
-																			<td>{
-																				field.type === "time" || field.type === "date"
-																					? <RenderDate date={field.value as string} />
-																					: field.value
-																			}</td>
-																		)
+		<ModalContentTable
+			modalBodyChildren={<Notifications context="not_corner" />}
+		>
+			{
+				//iterate through metadata catalogs
+				!!metadata &&
+					metadata.length > 0 &&
+					metadata.map((catalog, key) => (
+						// initialize form
+						<Formik<InitialValues>
+							key={key}
+							enableReinitialize
+							initialValues={getInitialValues(catalog)}
+							onSubmit={(values) => handleSubmit(values, catalog)}
+							innerRef={formikRef}
+						>
+							{(formik) => (
+								/* Render table for each metadata catalog */
+								<div className="obj tbl-details" key={key}>
+									<header>
+										<span>{t(header ? header : catalog.title as ParseKeys)}</span>
+									</header>
+									<div className="obj-container">
+										<table className="main-tbl">
+											<tbody>
+												{/* Render table row for each metadata field depending on type */}
+												{!!catalog.fields &&
+													catalog.fields.map((field, index) => (
+														<tr key={index}>
+															<td>
+																<span>{t(field.label as ParseKeys)}</span>
+																{field.required && (
+																	<i className="required">*</i>
+																)}
+															</td>
+															{field.readOnly ||
+															!hasAccess(editAccessRole, user) ? (
+																// non-editable field if readOnly is set or user doesn't have edit access rights
+																!!field.collection &&
+																field.collection.length !== 0 ? (
+																	<td>{getMetadataCollectionFieldName(field, field, t)}</td>
+																) : (
+																	<td>{
+																		field.type === "time" || field.type === "date"
+																			? <RenderDate date={field.value as string} />
+																			: field.value
+																	}</td>
+																)
+															) : (
+																<td className="editable">
+																	{/* Render single value or multi value editable input */}
+																	{field.type === "mixed_text" ? (
+																		<Field
+																			name={field.id}
+																			fieldInfo={field}
+																			showCheck
+																			isFirstField={index === 0}
+																			component={RenderMultiField}
+																		/>
 																	) : (
-																		<td className="editable">
-																			{/* Render single value or multi value editable input */}
-																			{field.type === "mixed_text" ? (
-																				<Field
-																					name={field.id}
-																					fieldInfo={field}
-																					showCheck
-																					component={RenderMultiField}
-																				/>
-																			) : (
-																				<Field
-																					name={field.id}
-																					metadataField={field}
-																					showCheck
-																					component={RenderField}
-																				/>
-																			)}
-																		</td>
+																		<Field
+																			name={field.id}
+																			metadataField={field}
+																			showCheck
+																			isFirstField={index === 0}
+																			component={RenderField}
+																		/>
 																	)}
-																</tr>
-															))}
-													</tbody>
-												</table>
-											</div>
+																</td>
+															)}
+														</tr>
+													))}
+											</tbody>
+										</table>
+									</div>
 
-									{formik.dirty && (
-										<>
-											{/* Render buttons for updating metadata */}
-											<WizardNavigationButtons
-												formik={formik}
-												customValidation={!checkValidity(formik)}
-												previousPage={() => formik.resetForm()}
-												createTranslationString="SAVE"
-												cancelTranslationString="CANCEL"
-												isLast
-											/>
+							{formik.dirty && (
+								<>
+									{/* Render buttons for updating metadata */}
+									<WizardNavigationButtons
+										formik={formik}
+										customValidation={!checkValidity(formik)}
+										previousPage={() => formik.resetForm()}
+										createTranslationString="SAVE"
+										cancelTranslationString="CANCEL"
+										isLast
+									/>
 
-												</>
-											)}
-										</div>
+										</>
 									)}
-								</Formik>
-							))
-					}
-				</div>
-			</div>
-		</div>
+								</div>
+							)}
+						</Formik>
+					))
+			}
+		</ModalContentTable>
 	);
 };
 

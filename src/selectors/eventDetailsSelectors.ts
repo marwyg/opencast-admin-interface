@@ -40,6 +40,8 @@ export const isTransactionReadOnly = (state: RootState) =>
 	state.eventDetails.transactionsReadOnly;
 export const getUploadAssetOptions = (state: RootState) =>
 	state.eventDetails.uploadAssetOptions;
+export const getUploadSourceOptions = (state: RootState) =>
+	state.eventDetails.uploadSourceOptions;
 export const getAssetAttachments = (state: RootState) =>
 	state.eventDetails.assetAttachments;
 export const getAssetAttachmentDetails = (state: RootState) =>
@@ -57,6 +59,7 @@ export const getAssetPublicationDetails = (state: RootState) =>
 
 /* selectors for policies */
 export const getPolicies = (state: RootState) => state.eventDetails.policies;
+export const getPolicyTemplateId = (state: RootState) => state.eventDetails.policyTemplateId;
 
 /* selectors for comments */
 export const getComments = (state: RootState) => state.eventDetails.comments;

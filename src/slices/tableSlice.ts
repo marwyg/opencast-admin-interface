@@ -77,7 +77,7 @@ export function isSeries(row: Row | Event | Series | Recording | Server | Job | 
 }
 
 // TODO: Improve row typing. While this somewhat correctly reflects the current state of our code, it is rather annoying to work with.
-export type Row = { selected: boolean } & ( Event | Series | Recording | Server | Job | Service | User | Group | AclResult | ThemeDetailsType )
+export type Row = { selected: boolean } & (Event | Series | Recording | Server | Job | Service | User | Group | AclResult | ThemeDetailsType)
 
 export type Resource = "events" | "series" | "recordings" | "jobs" | "servers" | "services" | "users" | "groups" | "acls" | "themes"
 
@@ -283,6 +283,12 @@ const tableSlice = createSlice({
 				}
 			})
 		},
+		resetTableProperties: (state) => {
+			state.columns = initialState.columns;
+			state.pages = initialState.pages;
+			state.rows = initialState.rows;
+			state.pagination.offset = initialState.pagination.offset;
+		},
 	},
 });
 
@@ -300,7 +306,8 @@ export const {
 	setTotalItems,
 	setOffset,
 	setDirectAccessiblePages,
-	setPageActive
+	setPageActive,
+	resetTableProperties
 } = tableSlice.actions;
 
 // Export the slice reducer as the default export
