@@ -22,7 +22,7 @@ export default defineConfig({
         port: Number(process.env.PORT) || 3000,
         proxy: {
             "^/(admin-ng|acl-manager|api|info|services|staticfiles|sysinfo|ui)/.*": {
-                target: process.env.PROXY_TARGET || "https://develop.opencast.org",
+                target: process.env.PROXY_TARGET || "https://stable.opencast.org",
                 changeOrigin: true,
                 secure: false,
                 configure: (proxy, options) => {
