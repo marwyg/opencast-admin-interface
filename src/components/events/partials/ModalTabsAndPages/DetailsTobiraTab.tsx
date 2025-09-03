@@ -202,6 +202,7 @@ type TobiraTableProps = {
 const TobiraTable = ({ tobiraData, i18nKey, openSubTab, handleDelete }: TobiraTableProps) => {
 	const { t } = useTranslation();
 	const deleteConfirmationModalRef = useRef<ModalHandle>(null);
+	const prefix = i18nKey === "SERIES" ? "s" : "v";
 
 	return <div className="obj">
 		<header>{t(`EVENTS.${i18nKey}.DETAILS.TOBIRA.PAGES`)}</header>
