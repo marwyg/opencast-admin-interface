@@ -33,7 +33,7 @@ const SeriesDetailsAccessTab = ({
 
 	const orgProperties = useAppSelector(state => getOrgProperties(state));
 
-	const overrideEnabled = (orgProperties['admin.series.acl.event.update.mode'] || 'optional').toLowerCase() === 'optional';
+	const overrideEnabled = (orgProperties["admin.series.acl.event.update.mode"] || "optional").toLowerCase() === "optional";
 
 	useEffect(() => {
 		dispatch(removeNotificationWizardForm());
