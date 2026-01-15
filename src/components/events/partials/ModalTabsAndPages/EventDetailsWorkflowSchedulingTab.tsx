@@ -23,10 +23,8 @@ import { formatWorkflowsForDropdown } from "../../../../utils/dropDownUtils";
 import ModalContent from "../../../shared/modals/ModalContent";
 
 type InitialValues = {
-	workflowDefinition: string;
-	configuration: {
-			[key: string]: any;
-	} | undefined;
+    workflowDefinition: string;
+    configuration: { [key: string]: any } | undefined;
 }
 
 /**
@@ -39,8 +37,8 @@ const EventDetailsWorkflowSchedulingTab = ({
 	eventId: string,
 	formikRef?: React.RefObject<FormikProps<InitialValues> | null>
 }) => {
-	const { t } = useTranslation();
-	const dispatch = useAppDispatch();
+    const { t } = useTranslation();
+    const dispatch = useAppDispatch();
 
 	const user = useAppSelector(state => getUserInformation(state));
 	const baseWorkflow = useAppSelector(state => getBaseWorkflow(state));
@@ -54,231 +52,163 @@ const EventDetailsWorkflowSchedulingTab = ({
 		user,
 	);
 
-	useEffect(() => {
-		dispatch(removeNotificationWizardForm());
-		dispatch(fetchWorkflows(eventId)).then();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+    useEffect(() => {
+        dispatch(removeNotificationWizardForm());
+        dispatch(fetchWorkflows(eventId));
+    }, [dispatch, eventId]);
 
-	const hasCurrentAgentAccess = () => {
-		// todo
-		return true;
-	};
+    const hasCurrentAgentAccess = () => true;
 
-	const extractDefaultValuesFromWorkflowDefinition = (workflowId: string) => {
-		const defaultValues: Record<string, any> = {};
-		const workflowDefinition = workflowDefinitions.find(def => def.id === workflowId);
-		if (workflowDefinition) {
-			const panel = workflowDefinition.configurationPanelJson;
-			if (Array.isArray(panel)) {
-				const fieldset = panel[0].fieldset;
-				if (fieldset !== undefined) {
-					fieldset.forEach(function (field) {
-						defaultValues[field.name] = field.value;
-					});
-				}
-			}
-		}
-		if (defaultValues.length == 0) {
-			console.warn("No default values extracted from workflow definition: ", workflowId);
-		}
-		return defaultValues;
-	};
+    const extractDefaultValues = (workflowId: string) => {
+        const defaultValues: Record<string, any> = {};
+        const definition = workflowDefinitions.find(def => def.id === workflowId);
+        definition?.configurationPanelJson?.forEach(panel => {
+            panel.fieldset?.forEach(field => {
+                if (field?.name) defaultValues[field.name] = field.value;
+            });
+        });
+        return defaultValues;
+    };
 
-	const setInitialValues = () => {
-		let configFromDatabase = undefined;
-		if (baseWorkflow.configuration) {
-			configFromDatabase = parseBooleanInObject(baseWorkflow.configuration);
-		}
-		const workflowId = "workflowId" in workflow && !!workflow.workflowId
-				? workflow.workflowId
-				: baseWorkflow.workflowId;
-		const initialConfigValuesFromWorkflowDef = extractDefaultValuesFromWorkflowDefinition(workflowId);
-		const initialConfig = { ...initialConfigValuesFromWorkflowDef, ...configFromDatabase };
-		return {
-			workflowDefinition: workflowId,
-			configuration: initialConfig,
-		};
-	};
+    /**
+     * Helper to get the configuration for a specific ID.
+     * Merges XML defaults with DB values ONLY if the ID matches what is saved in the DB.
+     */
+    const getConfigurationForWorkflow = (targetWorkflowId: string) => {
+        const xmlDefaults = extractDefaultValues(targetWorkflowId);
+        let mergedConfig = xmlDefaults;
+        if (baseWorkflow.workflowId === targetWorkflowId && baseWorkflow.configuration) {
+            const dbValues = parseBooleanInObject(baseWorkflow.configuration);
+            mergedConfig = { ...xmlDefaults, ...dbValues };
+        }
 
-	const handleSubmit = (values: {
-		workflowDefinition: string,
-		configuration: { [key: string]: unknown } | undefined
-	}) => {
-		dispatch(saveWorkflowConfig({ values, eventId }));
-	};
+        return mergedConfig;
+    };
 
-	return (
-		<ModalContent>
-			{/* Notifications */}
-			<Notifications context="not_corner" />
+    const handleWorkflowChange = (newWorkflowId: string, formik: FormikProps<InitialValues>) => {
+        const newConfigs = getConfigurationForWorkflow(newWorkflowId);
+        formik.setValues({
+            workflowDefinition: newWorkflowId,
+            configuration: newConfigs
+        });
+    };
 
-			{(isLoading || (
-				<Formik<InitialValues>
-					initialValues={setInitialValues()}
-					enableReinitialize
-					onSubmit={values => handleSubmit(values)}
-					innerRef={formikRef}
-				>
-					{formik => (
-						<div className="obj list-obj">
-							<header>
-								{t("EVENTS.EVENTS.DETAILS.WORKFLOW_DETAILS.CONFIGURATION") /* Workflow configuration */}
-							</header>
-							<div className="obj-container">
-								<div className="obj list-obj quick-actions">
-									<table className="main-tbl">
-										<thead>
-											<tr>
-												<th>
-													{t("EVENTS.EVENTS.DETAILS.WORKFLOWS.WORKFLOW") /* Select Workflow */}
-												</th>
-											</tr>
-										</thead>
+    const getInitialValues = (): InitialValues => {
+        const initialId = baseWorkflow.workflowId || "";
+        return {
+            workflowDefinition: initialId,
+            configuration: getConfigurationForWorkflow(initialId),
+        };
+    };
 
-										<tbody>
-											<tr>
-												<td>
-													<div className="obj-container padded">
-														<div className="editable">
-															<DropDown
-																value={
-																	formik.values.workflowDefinition
-																}
-																text={
-																	workflowDefinitions.find(
-																		workflowDef =>
-																			workflowDef.id ===
-																			formik.values.workflowDefinition,
-																	)?.title ?? ""
-																}
-																options={
-																	!!workflowDefinitions &&
-																	workflowDefinitions.length > 0
-																		? formatWorkflowsForDropdown(workflowDefinitions)
-																		: []
-																}
-																required={true}
-																handleChange={element => {
-																	if (element) {
-																		formik.setFieldValue("workflowDefinition", element.value);
-																	}
-																}}
-																placeholder={
-																	!!workflowDefinitions &&
-																	workflowDefinitions.length > 0
-																		? t(
-																				"EVENTS.EVENTS.NEW.PROCESSING.SELECT_WORKFLOW",
-																			)
-																		: t(
-																				"EVENTS.EVENTS.NEW.PROCESSING.SELECT_WORKFLOW_EMPTY",
-																			)
-																}
-																disabled={
-																	!hasCurrentAgentAccess() ||
-																	!isRoleWorkflowEdit
-																}
-																customCSS={{ width: "100%" }}
-															/>
-															{/* pre-select-from="workflowDefinitionIds" */}
-														</div>
-														<div className="obj-container padded">
-															{workflow.description}
-														</div>
-													</div>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
+    const handleSubmit = (values: InitialValues) => {
+        dispatch(saveWorkflowConfig({ values, eventId }));
+    };
 
-								<div className="obj list-obj quick-actions">
-									<table className="main-tbl">
-										<thead>
-											<tr>
-												<th>
-													{t("EVENTS.EVENTS.DETAILS.WORKFLOWS.CONFIGURATION") /* Configuration */}
-												</th>
-											</tr>
-										</thead>
+    return (
+        <ModalContent>
+            <Notifications context="not_corner" />
 
-										<tbody>
-											<tr>
-												<td>
-													<div className="obj-container padded">
-														{hasCurrentAgentAccess() &&
-															isRoleWorkflowEdit &&
-															!!workflowConfiguration &&
-															!!workflowConfiguration.workflowId && (
-																<div
-																	id="event-workflow-configuration"
-																	className="checkbox-container obj-container"
-																>
-																	<RenderWorkflowConfig
-																		workflowId={
-																			workflowConfiguration.workflowId
-																		}
-																		formik={formik}
-																	/>
-																</div>
-															)}
-														{(!!workflowConfiguration &&
-															!!workflowConfiguration.workflowId) || (
-															<div>
-																{t("EVENTS.EVENTS.DETAILS.WORKFLOWS.NO_CONFIGURATION") /* No config */}
-															</div>
-														)}
-													</div>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</div>
+            {isLoading ? (
+                <div>{t("LOADING")}</div>
+            ) : (
+                <Formik<InitialValues>
+                    initialValues={getInitialValues()}
+                    enableReinitialize={true}
+                    onSubmit={handleSubmit}
+                    innerRef={formikRef}
+                >
+                    {formik => {
+                        const selectedDef = workflowDefinitions.find(d => d.id === formik.values.workflowDefinition);
+                        const hasConfig = selectedDef?.configurationPanelJson && selectedDef.configurationPanelJson.length > 0;
 
-							{/* Save and cancel buttons */}
-							{hasCurrentAgentAccess() &&
-								isRoleWorkflowEdit &&
-								!!workflowConfiguration &&
-								!!workflowConfiguration.workflowId &&
-								formik.dirty && (
-									<footer style={{ padding: "0 15px" }}>
-										<div className="pull-left">
-											<button
-												type="reset"
-												onClick={() => {
-													formik.resetForm();
-												}}
-												disabled={!formik.isValid}
-												className={`cancel  ${
-													!formik.isValid ? "disabled" : ""
-												}`}
-											>
-												{t("CANCEL") /* Cancel */}
-											</button>
-										</div>
-										<div className="pull-right">
-											<button
-												onClick={() => formik.handleSubmit()}
-												disabled={!(formik.dirty && formik.isValid)}
-												aria-disabled={!(formik.dirty && formik.isValid)}
-												className={`save green  ${
-													!(formik.dirty && formik.isValid)
-														? "disabled"
-														: ""
-												}`}
-											>
-												{t("SAVE") /* Save */}
-											</button>
-										</div>
-									</footer>
-								)}
-						</div>
-					)}
-				</Formik>
-			))}
-		</ModalContent>
-	);
+                        return (
+                            <div className="obj list-obj">
+                                <header>{t("EVENTS.EVENTS.DETAILS.WORKFLOW_DETAILS.CONFIGURATION")}</header>
+                                <div className="obj-container">
+                                    {/* Workflow Selection Section */}
+                                    <div className="obj list-obj quick-actions">
+                                        <table className="main-tbl">
+                                            <thead><tr><th>{t("EVENTS.EVENTS.DETAILS.WORKFLOWS.WORKFLOW")}</th></tr></thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div className="obj-container padded">
+                                                            <div className="editable">
+                                                                <DropDown
+                                                                    value={formik.values.workflowDefinition}
+                                                                    text={selectedDef?.title ?? ""}
+                                                                    options={workflowDefinitions.length > 0 ? formatWorkflowsForDropdown(workflowDefinitions) : []}
+                                                                    required={true}
+                                                                    handleChange={el => el && handleWorkflowChange(el.value, formik)}
+                                                                    disabled={!isRoleWorkflowEdit}
+                                                                    customCSS={{ width: "100%" }}
+                                                                />
+                                                            </div>
+                                                            <div className="obj-container padded">{workflow.description}</div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Configuration / Checkboxes Section */}
+                                    <div className="obj list-obj quick-actions">
+                                        <table className="main-tbl">
+                                            <thead><tr><th>{t("EVENTS.EVENTS.DETAILS.WORKFLOWS.CONFIGURATION")}</th></tr></thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div className="obj-container padded">
+                                                            {isRoleWorkflowEdit && formik.values.workflowDefinition && hasConfig ? (
+                                                                <div id="event-workflow-configuration" className="checkbox-container obj-container">
+                                                                    <RenderWorkflowConfig
+                                                                        workflowId={formik.values.workflowDefinition}
+                                                                        formik={formik}
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div>{t("EVENTS.EVENTS.DETAILS.WORKFLOWS.NO_CONFIGURATION")}</div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                {isRoleWorkflowEdit && formik.values.workflowDefinition && formik.dirty && (
+                                    <footer style={{ padding: "0 15px" }}>
+                                        <div className="pull-left">
+                                            <button type="button" onClick={() => formik.resetForm()} className="cancel">
+                                                {t("CANCEL")}
+                                            </button>
+                                        </div>
+                                        <div className="pull-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    console.log("Submitting Values:", formik.values);
+                                                    formik.handleSubmit();
+                                                }}
+                                                disabled={!formik.isValid}
+                                                className={`save green ${!formik.isValid ? "disabled" : ""}`}
+                                            >
+                                                {t("SAVE")}
+                                            </button>
+                                        </div>
+                                    </footer>
+                                )}
+                            </div>
+                        );
+                    }}
+                </Formik>
+            )}
+        </ModalContent>
+    );
 };
 
 export default EventDetailsWorkflowSchedulingTab;
