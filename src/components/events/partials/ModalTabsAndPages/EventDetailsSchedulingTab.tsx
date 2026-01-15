@@ -65,6 +65,7 @@ export type InitialValues = {
 	captureAgent: string;
 	deviceInputs: string[];
 	locationHasInputs?: boolean;
+	inputs: string[];
 }
 
 /**
@@ -124,12 +125,12 @@ const EventDetailsSchedulingTab = ({
 
 	// finds the inputs that has to be selected in the formik
 	const getSelectedInputs = (deviceId: Recording["id"]) => {
-		let inputs = getInputs(deviceId);
+		const inputs = getInputs(deviceId);
 		if (!!inputs && deviceId === source.device.id) {
-			let inputMethods = source.device.inputMethods
-			if (!!inputMethods) {
-				let values = inputMethods.map((id: string) => {
-					const input = inputs.find((input) => input.id === id);
+			const inputMethods = source.device.inputMethods;
+			if (inputMethods) {
+				const values = inputMethods.map((id: string) => {
+					const input = inputs.find(input => input.id === id);
 					return input ? input.id : "";
 				});
 				return values;
@@ -233,7 +234,7 @@ const EventDetailsSchedulingTab = ({
 			? Array.from(source.device.inputMethods)
 			: [];
 
-		const filteredInputs = inputs.filter((input) => input !== "");
+		const filteredInputs = inputs.filter(input => input !== "");
 
 		startDate.setHours(0, 0, 0);
 		endDate.setHours(0, 0, 0);
@@ -250,6 +251,7 @@ const EventDetailsSchedulingTab = ({
 			captureAgent: source.device.name,
 			deviceInputs: filteredInputs,
 			locationHasInputs: !!filteredInputs.length,
+			inputs: filteredInputs,
 		};
 	};
 
@@ -280,7 +282,7 @@ const EventDetailsSchedulingTab = ({
 					<Formik<InitialValues>
 						enableReinitialize
 						initialValues={getInitialValues()}
-						onSubmit={values => submitForm(convertInitialValuesToScheduleInfo(values)).then((r) => {})}
+						onSubmit={values => submitForm(convertInitialValuesToScheduleInfo(values)).then(r => {})}
 						innerRef={formikRef}
 					>
 						{formik => (
@@ -502,7 +504,7 @@ const EventDetailsSchedulingTab = ({
 														title={"EVENTS.EVENTS.DETAILS.SOURCE.PLACEHOLDER.LOCATION"}
 														placeholder={"EVENTS.EVENTS.DETAILS.SOURCE.PLACEHOLDER.LOCATION"}
 														callback={async (value: string) => {
-															changeInputs(value, formik.setFieldValue)
+															changeInputs(value, formik.setFieldValue);
 														}}
 													/>
 												)}

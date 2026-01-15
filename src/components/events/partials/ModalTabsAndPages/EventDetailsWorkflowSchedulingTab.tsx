@@ -27,6 +27,23 @@ type InitialValues = {
     configuration: { [key: string]: any } | undefined;
 }
 
+type ConfigFieldValue = string | number | boolean | string[] | null | undefined;
+
+interface ConfigurationPanelField {
+    name: string;
+    value: ConfigFieldValue;
+}
+
+interface ConfigurationPanel {
+    fieldset: string | ConfigurationPanelField[];
+}
+
+interface WorkflowDefinition {
+    id: string;
+    configurationPanelJson: ConfigurationPanel[];
+    title?: string;
+}
+
 /**
  * This component manages the workflows tab of the event details modal
  */
@@ -59,16 +76,21 @@ const EventDetailsWorkflowSchedulingTab = ({
 
     const hasCurrentAgentAccess = () => true;
 
-    const extractDefaultValues = (workflowId: string) => {
-        const defaultValues: Record<string, any> = {};
-        const definition = workflowDefinitions.find(def => def.id === workflowId);
-        definition?.configurationPanelJson?.forEach(panel => {
-            panel.fieldset?.forEach(field => {
-                if (field?.name) defaultValues[field.name] = field.value;
-            });
-        });
-        return defaultValues;
-    };
+	const extractDefaultValues = (workflowId: string) => {
+		const defaultValues: Record<string, any> = {};
+		const definitions = workflowDefinitions as WorkflowDefinition[];
+		const definition = definitions.find(def => def.id === workflowId);
+		definition?.configurationPanelJson?.forEach((panel: ConfigurationPanel) => {
+			if (Array.isArray(panel.fieldset)) {
+				panel.fieldset.forEach((field: ConfigurationPanelField) => {
+					if (field?.name) {
+						defaultValues[field.name] = field.value;
+					}
+				});
+			}
+		});
+		return defaultValues;
+	};
 
     /**
      * Helper to get the configuration for a specific ID.
@@ -89,7 +111,7 @@ const EventDetailsWorkflowSchedulingTab = ({
         const newConfigs = getConfigurationForWorkflow(newWorkflowId);
         formik.setValues({
             workflowDefinition: newWorkflowId,
-            configuration: newConfigs
+            configuration: newConfigs,
         });
     };
 
@@ -110,7 +132,7 @@ const EventDetailsWorkflowSchedulingTab = ({
             <Notifications context="not_corner" />
 
             {isLoading ? (
-                <div>{t("LOADING")}</div>
+                <div>{t("TABLE_LOADING")}</div>
             ) : (
                 <Formik<InitialValues>
                     initialValues={getInitialValues()}
@@ -143,6 +165,11 @@ const EventDetailsWorkflowSchedulingTab = ({
                                                                     handleChange={el => el && handleWorkflowChange(el.value, formik)}
                                                                     disabled={!isRoleWorkflowEdit}
                                                                     customCSS={{ width: "100%" }}
+																	placeholder={
+																		workflowDefinitions.length > 0
+																			? t("EVENTS.EVENTS.NEW.PROCESSING.SELECT_WORKFLOW")
+																			: t("EVENTS.EVENTS.NEW.PROCESSING.SELECT_WORKFLOW_EMPTY")
+																	}
                                                                 />
                                                             </div>
                                                             <div className="obj-container padded">{workflow.description}</div>
