@@ -450,6 +450,7 @@ export const postNewEvent = createAppAsyncThunk("events/postNewEvent", async (pa
 		scheduleStartMinute: string,
 		sourceMode: string,
 		uploadAssetsTrack?: UploadAssetsTrack[],
+		deviceInputs: string[],
 		[key: string]: unknown,
 	},
 	metadataInfo: MetadataCatalog,
@@ -543,7 +544,7 @@ export const postNewEvent = createAppAsyncThunk("events/postNewEvent", async (pa
 			metadata: {
 				start: startDate,
 				device: values.location,
-				inputs: values.inputs ? values.inputs.join(",") : "",
+				inputs: values.deviceInputs ? values.deviceInputs.join(",") : "",
 				end: endDate,
 				duration: duration.toString(),
 			},
